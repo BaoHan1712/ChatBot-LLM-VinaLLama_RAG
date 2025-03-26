@@ -6,7 +6,7 @@ import pytz
 class PatternManager:
     def __init__(self):
         self.chitchat_patterns: Dict[str, str] = {
-            'greeting': r'(xin chào|hello|hi|chào|hey|này)',
+            'greeting': r'(xin chào|hello|hi|chào|hey)',
             'family': r'(gia đình|nhà|bao nhiêu người|mấy người)',
             'name': r'(tên|tên gì|là ai|bạn là)',
             'time': r'(mấy giờ|thời gian|giờ giấc)',
@@ -136,7 +136,12 @@ class PatternManager:
         import re
         text = text.lower()
         
-        # Tìm tất cả các intent có trong câu hỏi
+        # Kiểm tra trước nếu là câu hỏi liên quan đến tài liệu
+        for intent, pattern in self.doc_patterns.items():
+            if re.search(pattern, text):
+                return ["DOCUMENT_QUERY", intent]
+        
+        # Nếu không phải câu hỏi tài liệu, kiểm tra các intent chitchat
         found_intents = []
         for intent, pattern in self.chitchat_patterns.items():
             if re.search(pattern, text):
@@ -160,9 +165,4 @@ class PatternManager:
             if intent not in ['time', 'date', 'weather']:
                 return self.responses.get(intent, ["Xin lỗi, tôi chưa có câu trả lời cho nội dung này."])
         
-        # Kiểm tra nếu là câu hỏi liên quan đến tài liệu
-        for intent, pattern in self.doc_patterns.items():
-            if re.search(pattern, text):
-                return ["DOCUMENT_QUERY", intent]  # Signal cho biết đây là câu hỏi tài liệu
-                
-        return ["GENERAL_QUERY"]  # Signal cho biết đây là câu hỏi thông thường
+        return ["GENERAL_QUERY"]  # Nếu không match với pattern nào

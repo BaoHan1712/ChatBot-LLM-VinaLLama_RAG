@@ -1,5 +1,6 @@
 import os
-from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import GPT4AllEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -9,14 +10,13 @@ from langchain_community.retrievers import BM25Retriever
 embeddings = GPT4AllEmbeddings(model_file="models/vinallama-7b-chat_q5_0.gguf")
 
 def load_pdf_data():
-    pdf_path = "data/working.pdf"
+    pdf_path = "data\working.pdf"
     loader = PyPDFLoader(pdf_path)
     docs = loader.load()
     
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=128,
+        chunk_size=512,
         chunk_overlap=50,
-        separators=["\n\n", "\n", ".", "!", "?", ";", ":", ",", " ", ""],
         length_function=len,
         add_start_index=True
     )
@@ -30,7 +30,7 @@ def load_pdf_data():
         embeddings,
         distance_strategy="METRIC_INNER_PRODUCT"
     )
-    vector_store.save_local("faiss_index")
+    vector_store.save_local("vectorstores/db_faiss")
 
     return bm25_retriever
 
@@ -107,14 +107,13 @@ if __name__ == "__main__":
     if not os.path.exists("faiss_index"):
         bm25_retriever = load_pdf_data()
     else:
-        pdf_path = "data/working.pdf"
+        pdf_path = "data\working.pdf"
         loader = PyPDFLoader(pdf_path)
         docs = loader.load()
 
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=128,
+            chunk_size=512,
             chunk_overlap=50,
-            separators=["\n\n", "\n", ".", "!", "?", ";", ":", ",", " ", ""],
             length_function=len,
             add_start_index=True
         )
@@ -122,6 +121,6 @@ if __name__ == "__main__":
         bm25_retriever = BM25Retriever.from_documents(all_splits)
         bm25_retriever.k = 5
 
-    vector_store = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
+    vector_store = FAISS.load_local("vectorstores/db_faiss", embeddings, allow_dangerous_deserialization=True)
 
     enhanced_test_search(bm25_retriever, vector_store)
